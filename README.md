@@ -9,6 +9,6 @@ sudo: required
 services:
   - docker
   
-  script:
-    - wget -O- https://raw.githubusercontent.com/it-the-drote/debrewery/master/debrew.sh | bash -
+script:
+  - wget -O- https://raw.githubusercontent.com/it-the-drote/debrewery/master/debrew.sh | bash -
 ```
