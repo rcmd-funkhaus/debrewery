@@ -115,14 +115,12 @@ EOF
         cd ./ext-build/$DEBREW_REPO_OWNER/
         echo -e "\e[0;32mPushing build artifacts to the repo...\e[0m"
         for i in `ls *.deb`; do
-            #if [[ $DEBREW_HIDDEN_REPO == 'true' ]]; then
-            #    DEBREW_FTP_URL="ftp://it-the-drote.tk/hidden/"
-            #else
-            #    DEBREW_FTP_URL="ftp://it-the-drote.tk/$DEBREW_ENVIRONMENT/$DISTRO/$ARCH/"
-            #fi
-            echo -e "\e[0;31m Uploading $i to $DEBREW_FTP_URL\e[0m"
             DEBREW_FTP_URL="https://api.bintray.com/content/like-all/deb/$DEBREW_SOURCE_NAME/$DEBREW_VERSION_PREFIX/$i;deb_distribution=$DISTRO-$DEBREW_ENVIRONMENT;deb_component=main;deb_architecture=$ARCH"
-            curl -s -T "$i" "$DEBREW_FTP_URL" --user like-all:$BINTRAY_FTP_PASSWORD || die $DEBREW_SOURCE_NAME $DISTRO $ARCH
+            echo -e "\e[0;31m Uploading $i to $DEBREW_FTP_URL\e[0m"
+            report=`curl -s -T "$i" "$DEBREW_FTP_URL" --user like-all:$BINTRAY_FTP_PASSWORD` || die $DEBREW_SOURCE_NAME $DISTRO $ARCH
+            if [[ `echo $report | jq -r .message` = 'success' ]]; then
+                curl -XPOST -d "message=Package $i was successfully uploaded to Bintray repo&token=$TELEGRAM_TOKEN" http://api.it-the-drote.tk/telegram
+            fi
         done
         cd $DEBREW_CWD
         echo -e "\e[0;32mRemoving Docker container...\e[0m"
