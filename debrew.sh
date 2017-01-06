@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-source ./debian/package.sh
-
-#travis workaround
-#-----------------
 export PING_SLEEP=30s
 export WORKDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export BUILD_OUTPUT=$WORKDIR/build.out
@@ -42,6 +38,13 @@ DEBREW_REPO_OWNER=`echo $DEBREW_CWD | cut -f 5 -d '/'`
 DEBREW_SOURCE_NAME=`dpkg-parsechangelog | grep Source | cut -f 2 -d ' '`
 DEBREW_REVISION_PREFIX=`dpkg-parsechangelog | grep Version | cut -f 2 -d ' '`
 DEBREW_VERSION_PREFIX=`echo $DEBREW_REVISION_PREFIX | cut -f 1 -d '-'`
+
+PRODUCTION_FLAVOURS=`grep X-Debrew-Production-Flavours ./debian/control | cut -f 2- -d ' ' | jq -r '.[]'`
+PRODUCTION_ARCHITECTURES=`grep X-Debrew-Production-Architectures ./debian/control | cut -f 2- -d ' ' | jq -r '.[]'`
+TESTING_FLAVOURS=`grep X-Debrew-Testing-Flavours ./debian/control | cut -f 2- -d ' ' | jq -r '.[]'`
+TESTING_ARCHITECTURES=`grep X-Debrew-Testing-Architectures ./debian/control | cut -f 2- -d ' ' | jq -r '.[]'`
+DEBREW_MAINTAINER_LOGIN=`grep X-Debrew-Maintainer-Login ./debian/control | cut -f 2- -d ' ' | jq -r '.[]'`
+
 stable_hash=`git rev-list stable | head -n 1`
 current_hash=`git rev-parse HEAD`
 changelog_modified=`git show --name-only HEAD | grep -c 'debian/changelog'`
@@ -115,9 +118,9 @@ EOF
         cd ./ext-build/$DEBREW_REPO_OWNER/
         echo -e "\e[0;32mPushing build artifacts to the repo...\e[0m"
         for i in `ls *.deb`; do
-            DEBREW_FTP_URL="https://api.bintray.com/content/like-all/deb/$DEBREW_SOURCE_NAME/$DEBREW_VERSION_PREFIX/$i;deb_distribution=$DISTRO-$DEBREW_ENVIRONMENT;deb_component=main;deb_architecture=$ARCH;publish=1"
+            DEBREW_FTP_URL="https://api.bintray.com/content/$DEBREW_MAINTAINER_LOGIN/deb/$DEBREW_SOURCE_NAME/$DEBREW_VERSION_PREFIX/$i;deb_distribution=$DISTRO-$DEBREW_ENVIRONMENT;deb_component=main;deb_architecture=$ARCH;publish=1"
             echo -e "\e[0;31m Uploading $i to $DEBREW_FTP_URL\e[0m"
-            report=`curl -s -T "$i" "$DEBREW_FTP_URL" --user like-all:$BINTRAY_FTP_PASSWORD` || die $DEBREW_SOURCE_NAME $DISTRO $ARCH
+            report=`curl -s -T "$i" "$DEBREW_FTP_URL" --user $DEBREW_MAINTAINER_LOGIN:$BINTRAY_FTP_PASSWORD` || die $DEBREW_SOURCE_NAME $DISTRO $ARCH
             if [[ `echo $report | jq -r .message` = 'success' ]]; then
                 curl -XPOST -d "message=Package $i was successfully uploaded to Bintray repo&token=$TELEGRAM_TOKEN" http://api.it-the-drote.tk/telegram
             fi
