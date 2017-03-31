@@ -17,7 +17,7 @@ function die() {
     ARCHITECTURE=$3
 
     dump_output
-    test -z $TELEGRAM_TOKEN || curl -XPOST -d "message=Building $NAME on $DISTRO-$ARCHITECTURE has failed: https://travis-ci.org/$TRAVIS_REPO_SLUG/jobs/$TRAVIS_JOB_ID&token=$TELEGRAM_TOKEN" http://api.it-the-drote.tk/telegram
+    test -z $TELEGRAM_TOKEN || curl -XPOST -d "message=❌ Job number $TRAVIS_JOB_NUMBER for $NAME on $DISTRO-$ARCHITECTURE has failed:\n\nhttps://travis-ci.org/$TRAVIS_REPO_SLUG/jobs/$TRAVIS_JOB_ID&token=$TELEGRAM_TOKEN" http://api.it-the-drote.tk/telegram
     exit 1
 }
 
