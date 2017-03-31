@@ -18,7 +18,7 @@ function die() {
     ARCHITECTURE=$3
 
     dump_output
-    test -z $TELEGRAM_TOKEN || curl -XPOST -d "message=❌ 𝗙𝗔𝗜𝗟${NL}Job number: ${TRAVIS_JOB_NUMBER}${NL}Package: ${NAME}${NL}Distro: ${DISTRO}-${ARCHITECTURE}${NL}Logs: https://travis-ci.org/${TRAVIS_REPO_SLUG}/jobs/${TRAVIS_JOB_ID}&token=${TELEGRAM_TOKEN}" http://api.it-the-drote.tk/telegram
+    test -z $TELEGRAM_TOKEN || curl -XPOST -d "message=❌ 𝗙𝗔𝗜𝗟${NL}Job number: ${TRAVIS_JOB_NUMBER}${NL}Package: ${NAME} ${NL}Distro: ${DISTRO}-${ARCHITECTURE} ${NL}Logs: https://travis-ci.org/${TRAVIS_REPO_SLUG}/jobs/${TRAVIS_JOB_ID}&token=${TELEGRAM_TOKEN}" http://api.it-the-drote.tk/telegram
     exit 1
 }
 
@@ -123,7 +123,7 @@ EOF
             echo -e "\e[0;31m Uploading $i to $DEBREW_FTP_URL\e[0m"
             report=`curl -s -T "$i" "$DEBREW_FTP_URL" --user $DEBREW_MAINTAINER_LOGIN:$BINTRAY_FTP_PASSWORD` || die $DEBREW_SOURCE_NAME $DISTRO $ARCH
             if [[ `echo $report | jq -r .message` = 'success' ]]; then
-                curl -XPOST -d "message=✅ 𝗦𝗨𝗖𝗖𝗘𝗦𝗦${NL}Job number: ${TRAVIS_JOB_NUMBER}${NL}Package: ${NAME}${NL}Distro: ${DISTRO}-${ARCHITECTURE}${NL}Logs: https://travis-ci.org/${TRAVIS_REPO_SLUG}/jobs/${TRAVIS_JOB_ID}&token=${TELEGRAM_TOKEN}" http://api.it-the-drote.tk/telegram
+                curl -XPOST -d "message=✅ 𝗦𝗨𝗖𝗖𝗘𝗦𝗦${NL}Job number: ${TRAVIS_JOB_NUMBER}${NL}Package: ${NAME} ${NL}Distro: ${DISTRO}-${ARCHITECTURE} ${NL}Logs: https://travis-ci.org/${TRAVIS_REPO_SLUG}/jobs/${TRAVIS_JOB_ID}&token=${TELEGRAM_TOKEN}" http://api.it-the-drote.tk/telegram
             fi
         done
         cd $DEBREW_CWD
