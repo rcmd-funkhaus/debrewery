@@ -121,10 +121,12 @@ EOF
         for i in `ls *.deb`; do
             DEBREW_FTP_URL="https://api.bintray.com/content/$DEBREW_MAINTAINER_LOGIN/deb/$DEBREW_SOURCE_NAME/$DEBREW_VERSION_PREFIX/$i;deb_distribution=$DISTRO-$DEBREW_ENVIRONMENT;deb_component=main;deb_architecture=$ARCH;publish=1"
             echo -e "\e[0;31m Uploading $i to $DEBREW_FTP_URL\e[0m"
-            report=`curl -s -T "$i" "$DEBREW_FTP_URL" --user $DEBREW_MAINTAINER_LOGIN:$BINTRAY_FTP_PASSWORD` || die $DEBREW_SOURCE_NAME $DISTRO $ARCH
+            report=`curl -s -T "$i" "$DEBREW_FTP_URL" --user $DEBREW_MAINTAINER_LOGIN:$BINTRAY_FTP_PASSWORD`
             if [[ `echo $report | jq -r .message` = 'success' ]]; then
                 curl -XPOST -d "message=✅ SUCCESS${NL}Job number: ${TRAVIS_JOB_NUMBER}${NL}Package: ${DEBREW_SOURCE_NAME} ${NL}Distro: ${DISTRO}-${ARCH} ${NL}Logs: https://travis-ci.org/${TRAVIS_REPO_SLUG}/jobs/${TRAVIS_JOB_ID}&token=${TELEGRAM_TOKEN}" http://api.it-the-drote.tk/telegram
-            fi
+            else
+                die $DEBREW_SOURCE_NAME $DISTRO $ARCH
+            die
         done
         cd $DEBREW_CWD
         echo -e "\e[0;32mRemoving Docker container...\e[0m"
