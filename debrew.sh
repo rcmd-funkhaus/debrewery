@@ -126,7 +126,7 @@ EOF
                 curl -XPOST -d "message=✅ SUCCESS${NL}Job number: ${TRAVIS_JOB_NUMBER}${NL}Package: ${DEBREW_SOURCE_NAME} ${NL}Distro: ${DISTRO}-${ARCH} ${NL}Logs: https://travis-ci.org/${TRAVIS_REPO_SLUG}/jobs/${TRAVIS_JOB_ID}&token=${TELEGRAM_TOKEN}" http://api.it-the-drote.tk/telegram
             else
                 die $DEBREW_SOURCE_NAME $DISTRO $ARCH
-            die
+            fi
         done
         cd $DEBREW_CWD
         echo -e "\e[0;32mRemoving Docker container...\e[0m"
