@@ -8,7 +8,17 @@ sudo: required
 
 services:
   - docker
-  
+
 script:
   - wget -O- https://raw.githubusercontent.com/it-the-drote/debrewery/master/debrew.sh | bash -
 ```
+
+### Docker image requirements
+
+Debian packages:
++ build-essential
++ devscripts
++ curl
++ dh-make
++ locales(DEBIAN)
++ ruby-ronn
