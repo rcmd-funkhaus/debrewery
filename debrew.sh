@@ -28,7 +28,7 @@ function die() {
 echo -e "\e[0;32mSetting up variables...\e[0m"
 
 DEBREW_SUPPORTED_DISTRIBUTIONS="jessie
-wheezy
+stretch
 trusty
 xenial"
 DEBREW_SUPPORTED_ARCHITECTURES="amd64
