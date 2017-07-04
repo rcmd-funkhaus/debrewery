@@ -21,5 +21,6 @@ Debian packages:
 + curl
 + dh-make
 + locales(DEBIAN)
-+ `locale-gen en_US.UTF-8`(UBUNTU) 
++ `locale-gen en_US.UTF-8`(UBUNTU)
++ equivs(UBUNTU)
 + ruby-ronn
