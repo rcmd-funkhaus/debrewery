@@ -125,10 +125,12 @@ EOF
         mkdir ext-build
         echo -e "\e[0;32mExtracting files from Docker container...\e[0m"
         for NAME in $PACKAGE_NAMES; do
+          docker cp `cat $DEBREW_CIDFILE`":"$DEBREW_CWD"/../${DEBREW_REPO_OWNER}/${NAME}_${DEBREW_REVISION_PREFIX}+${DISTRO}_${ARCH}.deb" ./ext-build || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH
           echo "NAME: ${NAME}_${DEBREW_REVISION_PREFIX}+${DISTRO}_${ARCH}.deb"
         done
-        docker cp `cat $DEBREW_CIDFILE`":"$DEBREW_CWD"/../" ./ext-build || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH
-        cd ./ext-build/$DEBREW_REPO_OWNER/
+        cd ./ext-build/
+        echo "Listing packages in directory:"
+        ls -l ./
         echo -e "\e[0;32mPushing build artifacts to the repo...\e[0m"
         for i in `ls *.deb`; do
             DEBREW_FTP_URL="https://api.bintray.com/content/$DEBREW_MAINTAINER_LOGIN/deb/$DEBREW_SOURCE_NAME/$DEBREW_VERSION_PREFIX/$i;deb_distribution=$DISTRO-$DEBREW_ENVIRONMENT;deb_component=main;deb_architecture=$ARCH;publish=1"
