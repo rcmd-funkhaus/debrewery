@@ -13,13 +13,22 @@ dump_output() {
 }
 
 function die() {
-    NAME=$1
-    DISTRO=$2
-    ARCHITECTURE=$3
+    STATUS=$1
+    NAME=$2
+    DISTRO=$3
+    ARCHITECTURE=$4
 
-    dump_output
-    test -z $TELEGRAM_TOKEN || curl -XPOST -d "message=❌ FAIL${NL}Job number: ${TRAVIS_JOB_NUMBER}${NL}Package: ${NAME} ${NL}Distro: ${DISTRO}-${ARCHITECTURE} ${NL}Logs: https://travis-ci.org/${TRAVIS_REPO_SLUG}/jobs/${TRAVIS_JOB_ID}&token=${TELEGRAM_TOKEN}" http://api.it-the-drote.tk/telegram
-    exit 1
+    case $STATUS in
+      'success' )
+        test -z $TELEGRAM_TOKEN || curl -XPOST -d "message=✅ SUCCESS${NL}Job number: ${TRAVIS_JOB_NUMBER}${NL}Package: ${NAME} ${NL}Distro: ${DISTRO}-${ARCHITECTURE} ${NL}Logs: https://travis-ci.org/${TRAVIS_REPO_SLUG}/jobs/${TRAVIS_JOB_ID}&token=${TELEGRAM_TOKEN}" http://api.it-the-drote.tk/telegram
+        exit 0
+        ;;
+      'failure' )
+        dump_output
+        test -z $TELEGRAM_TOKEN || curl -XPOST -d "message=❌ FAILURE${NL}Job number: ${TRAVIS_JOB_NUMBER}${NL}Package: ${NAME} ${NL}Distro: ${DISTRO}-${ARCHITECTURE} ${NL}Logs: https://travis-ci.org/${TRAVIS_REPO_SLUG}/jobs/${TRAVIS_JOB_ID}&token=${TELEGRAM_TOKEN}" http://api.it-the-drote.tk/telegram
+        exit 1
+        ;;
+    esac
 }
 
 #-----------------
@@ -44,6 +53,7 @@ PRODUCTION_FLAVOURS=`grep X-Debrew-Production-Flavours ./debian/control | cut -f
 PRODUCTION_ARCHITECTURES=`grep X-Debrew-Production-Architectures ./debian/control | cut -f 2- -d ' ' | jq -r '.[]'`
 TESTING_FLAVOURS=`grep X-Debrew-Testing-Flavours ./debian/control | cut -f 2- -d ' ' | jq -r '.[]'`
 TESTING_ARCHITECTURES=`grep X-Debrew-Testing-Architectures ./debian/control | cut -f 2- -d ' ' | jq -r '.[]'`
+PACKAGE_NAMES=`grep "Package: " ./debian/control | awk '{print $2}'`
 DEBREW_MAINTAINER_LOGIN=`grep X-Debrew-Maintainer-Login ./debian/control | cut -f 2- -d ' '`
 
 stable_hash=`git rev-list stable | head -n 1`
@@ -107,15 +117,18 @@ CMD /bin/true
 EOF
         bash -c "while true; do echo \$(date) - building ...; sleep $PING_SLEEP; done" & PING_LOOP_PID=$!
         echo -e "\e[0;32mBuilding Docker container...\e[0m"
-        docker build --tag="debrew/"$DEBREW_SOURCE_NAME"_"$DISTRO . >> $BUILD_OUTPUT 2>&1 || die $DEBREW_SOURCE_NAME $DISTRO $ARCH
+        docker build --tag="debrew/"$DEBREW_SOURCE_NAME"_"$DISTRO . >> $BUILD_OUTPUT 2>&1 || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH
         rm -f Dockerfile
         DEBREW_CIDFILE=`mktemp`
         rm -f $DEBREW_CIDFILE
         echo -e "\e[0;32mRunning Docker container...\e[0m"
-        docker run --cidfile=$DEBREW_CIDFILE "debrew/"$DEBREW_SOURCE_NAME"_"$DISTRO >> $BUILD_OUTPUT 2>&1 || die $DEBREW_SOURCE_NAME $DISTRO $ARCH
+        docker run --cidfile=$DEBREW_CIDFILE "debrew/"$DEBREW_SOURCE_NAME"_"$DISTRO >> $BUILD_OUTPUT 2>&1 || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH
         mkdir ext-build
         echo -e "\e[0;32mExtracting files from Docker container...\e[0m"
-        docker cp `cat $DEBREW_CIDFILE`":"$DEBREW_CWD"/../" ./ext-build || die $DEBREW_SOURCE_NAME $DISTRO $ARCH
+        for NAME in `echo $PACKAGE_NAMES`; do
+          echo "NAME: $NAME_$DEBREW_REVISION_PREFIX+$DISTRO_$ARCH.deb"
+        done
+        docker cp `cat $DEBREW_CIDFILE`":"$DEBREW_CWD"/../" ./ext-build || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH
         cd ./ext-build/$DEBREW_REPO_OWNER/
         echo -e "\e[0;32mPushing build artifacts to the repo...\e[0m"
         for i in `ls *.deb`; do
@@ -123,9 +136,9 @@ EOF
             echo -e "\e[0;31m Uploading $i to $DEBREW_FTP_URL\e[0m"
             report=`curl -s -T "$i" "$DEBREW_FTP_URL" --user $DEBREW_MAINTAINER_LOGIN:$BINTRAY_FTP_PASSWORD`
             if [[ `echo $report | jq -r .message` = 'success' ]]; then
-                curl -XPOST -d "message=✅ SUCCESS${NL}Job number: ${TRAVIS_JOB_NUMBER}${NL}Package: ${DEBREW_SOURCE_NAME} ${NL}Distro: ${DISTRO}-${ARCH} ${NL}Logs: https://travis-ci.org/${TRAVIS_REPO_SLUG}/jobs/${TRAVIS_JOB_ID}&token=${TELEGRAM_TOKEN}" http://api.it-the-drote.tk/telegram
+                die 'success' $DEBREW_SOURCE_NAME $DISTRO $ARCH
             else
-                die $DEBREW_SOURCE_NAME $DISTRO $ARCH
+                die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH
             fi
         done
         cd $DEBREW_CWD
