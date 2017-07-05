@@ -36,6 +36,9 @@ function die() {
 
 echo -e "\e[0;32mSetting up variables...\e[0m"
 
+test -z TELEGRAM_TOKEN && die 'failure' 'null' 'null' 'null' 'No telegram token given'
+test -z BINTRAY_FTP_PASSWORD && die 'failure' 'null' 'null' 'null' 'No bintray password given'
+
 DEBREW_SUPPORTED_DISTRIBUTIONS="jessie
 stretch
 trusty
