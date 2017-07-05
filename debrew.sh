@@ -21,7 +21,6 @@ function die() {
     case $STATUS in
       'success' )
         test -z $TELEGRAM_TOKEN || curl -XPOST -d "message=✅ SUCCESS${NL}Job number: ${TRAVIS_JOB_NUMBER}${NL}Package: ${NAME} ${NL}Distro: ${DISTRO}-${ARCHITECTURE} ${NL}Logs: https://travis-ci.org/${TRAVIS_REPO_SLUG}/jobs/${TRAVIS_JOB_ID}&token=${TELEGRAM_TOKEN}" http://api.it-the-drote.tk/telegram
-        exit 0
         ;;
       'failure' )
         dump_output
