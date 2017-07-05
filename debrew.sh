@@ -17,6 +17,7 @@ function die() {
     NAME=$2
     DISTRO=$3
     ARCHITECTURE=$4
+    TASK=$5
 
     case $STATUS in
       'success' )
@@ -24,7 +25,7 @@ function die() {
         ;;
       'failure' )
         dump_output
-        test -z $TELEGRAM_TOKEN || curl -XPOST -d "message=❌ FAILURE${NL}Job number: ${TRAVIS_JOB_NUMBER}${NL}Package: ${NAME} ${NL}Distro: ${DISTRO}-${ARCHITECTURE} ${NL}Logs: https://travis-ci.org/${TRAVIS_REPO_SLUG}/jobs/${TRAVIS_JOB_ID}&token=${TELEGRAM_TOKEN}" http://api.it-the-drote.tk/telegram
+        test -z $TELEGRAM_TOKEN || curl -XPOST -d "message=❌ FAILURE${NL}Job number: ${TRAVIS_JOB_NUMBER}${NL}Package: ${NAME} ${NL}Distro: ${DISTRO}-${ARCHITECTURE} ${NL}Logs: https://travis-ci.org/${TRAVIS_REPO_SLUG}/jobs/${TRAVIS_JOB_ID} ${NL}Failed task: ${TASK}&token=${TELEGRAM_TOKEN}" http://api.it-the-drote.tk/telegram
         exit 1
         ;;
     esac
@@ -116,16 +117,16 @@ CMD /bin/true
 EOF
         bash -c "while true; do echo \$(date) - building ...; sleep $PING_SLEEP; done" & PING_LOOP_PID=$!
         echo -e "\e[0;32mBuilding Docker container...\e[0m"
-        docker build --tag="debrew/"$DEBREW_SOURCE_NAME"_"$DISTRO . >> $BUILD_OUTPUT 2>&1 || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH
+        docker build --tag="debrew/"$DEBREW_SOURCE_NAME"_"$DISTRO . >> $BUILD_OUTPUT 2>&1 || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH "building container"
         rm -f Dockerfile
         DEBREW_CIDFILE=`mktemp`
         rm -f $DEBREW_CIDFILE
         echo -e "\e[0;32mRunning Docker container...\e[0m"
-        docker run --cidfile=$DEBREW_CIDFILE "debrew/"$DEBREW_SOURCE_NAME"_"$DISTRO >> $BUILD_OUTPUT 2>&1 || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH
+        docker run --cidfile=$DEBREW_CIDFILE "debrew/"$DEBREW_SOURCE_NAME"_"$DISTRO >> $BUILD_OUTPUT 2>&1 || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH "running container"
         mkdir ext-build
         echo -e "\e[0;32mExtracting files from Docker container...\e[0m"
         for NAME in $PACKAGE_NAMES; do
-          docker cp `cat $DEBREW_CIDFILE`":"$DEBREW_CWD"/../${NAME}_${DEBREW_REVISION_PREFIX}+${DISTRO}_${ARCH}.deb" ./ext-build || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH
+          docker cp `cat $DEBREW_CIDFILE`":"$DEBREW_CWD"/../${NAME}_${DEBREW_REVISION_PREFIX}+${DISTRO}_${ARCH}.deb" ./ext-build || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH "copying packages"
         done
         cd ./ext-build/
         echo -e "\e[0;32mPushing build artifacts to the repo...\e[0m"
@@ -134,10 +135,12 @@ EOF
             DEBREW_FTP_URL="https://api.bintray.com/content/$DEBREW_MAINTAINER_LOGIN/deb/$NAME/$DEBREW_VERSION_PREFIX/$PACKAGE_FULLNAME;deb_distribution=$DISTRO-$DEBREW_ENVIRONMENT;deb_component=main;deb_architecture=$ARCH;publish=1"
             echo -e "\e[0;31m Uploading $i to $DEBREW_FTP_URL\e[0m"
             report=`curl -s -T "$PACKAGE_FULLNAME" "$DEBREW_FTP_URL" --user $DEBREW_MAINTAINER_LOGIN:$BINTRAY_FTP_PASSWORD`
+            echo "Bintray report:"
+            echo $report | jq .
             if [[ `echo $report | jq -r .message` = 'success' ]]; then
                 die 'success' $NAME $DISTRO $ARCH
             else
-                die 'failure' $NAME $DISTRO $ARCH
+                die 'failure' $NAME $DISTRO $ARCH "uploading packages"
             fi
         done
         cd $DEBREW_CWD
