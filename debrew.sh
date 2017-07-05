@@ -125,7 +125,7 @@ EOF
         docker run --cidfile=$DEBREW_CIDFILE "debrew/"$DEBREW_SOURCE_NAME"_"$DISTRO >> $BUILD_OUTPUT 2>&1 || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH
         mkdir ext-build
         echo -e "\e[0;32mExtracting files from Docker container...\e[0m"
-        for NAME in `echo $PACKAGE_NAMES`; do
+        for NAME in $PACKAGE_NAMES; do
           echo "NAME: $NAME_$DEBREW_REVISION_PREFIX+$DISTRO_$ARCH.deb"
         done
         docker cp `cat $DEBREW_CIDFILE`":"$DEBREW_CWD"/../" ./ext-build || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH
