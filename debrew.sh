@@ -125,7 +125,7 @@ EOF
         mkdir ext-build
         echo -e "\e[0;32mExtracting files from Docker container...\e[0m"
         for NAME in $PACKAGE_NAMES; do
-          docker cp `cat $DEBREW_CIDFILE`":"$DEBREW_CWD"/../${DEBREW_REPO_OWNER}/${NAME}_${DEBREW_REVISION_PREFIX}+${DISTRO}_${ARCH}.deb" ./ext-build || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH
+          docker cp `cat $DEBREW_CIDFILE`":"$DEBREW_CWD"/../${NAME}_${DEBREW_REVISION_PREFIX}+${DISTRO}_${ARCH}.deb" ./ext-build || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH
           echo "NAME: ${NAME}_${DEBREW_REVISION_PREFIX}+${DISTRO}_${ARCH}.deb"
         done
         cd ./ext-build/
