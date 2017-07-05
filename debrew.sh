@@ -126,20 +126,18 @@ EOF
         echo -e "\e[0;32mExtracting files from Docker container...\e[0m"
         for NAME in $PACKAGE_NAMES; do
           docker cp `cat $DEBREW_CIDFILE`":"$DEBREW_CWD"/../${NAME}_${DEBREW_REVISION_PREFIX}+${DISTRO}_${ARCH}.deb" ./ext-build || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH
-          echo "NAME: ${NAME}_${DEBREW_REVISION_PREFIX}+${DISTRO}_${ARCH}.deb"
         done
         cd ./ext-build/
-        echo "Listing packages in directory:"
-        ls -l ./
         echo -e "\e[0;32mPushing build artifacts to the repo...\e[0m"
-        for i in `ls *.deb`; do
-            DEBREW_FTP_URL="https://api.bintray.com/content/$DEBREW_MAINTAINER_LOGIN/deb/$DEBREW_SOURCE_NAME/$DEBREW_VERSION_PREFIX/$i;deb_distribution=$DISTRO-$DEBREW_ENVIRONMENT;deb_component=main;deb_architecture=$ARCH;publish=1"
+        for NAME in $PACKAGE_NAMES; do
+            PACKAGE_FULLNAME="${NAME}_${DEBREW_REVISION_PREFIX}+${DISTRO}_${ARCH}.deb"
+            DEBREW_FTP_URL="https://api.bintray.com/content/$DEBREW_MAINTAINER_LOGIN/deb/$NAME/$DEBREW_VERSION_PREFIX/$PACKAGE_FULLNAME;deb_distribution=$DISTRO-$DEBREW_ENVIRONMENT;deb_component=main;deb_architecture=$ARCH;publish=1"
             echo -e "\e[0;31m Uploading $i to $DEBREW_FTP_URL\e[0m"
-            report=`curl -s -T "$i" "$DEBREW_FTP_URL" --user $DEBREW_MAINTAINER_LOGIN:$BINTRAY_FTP_PASSWORD`
+            report=`curl -s -T "$PACKAGE_FULLNAME" "$DEBREW_FTP_URL" --user $DEBREW_MAINTAINER_LOGIN:$BINTRAY_FTP_PASSWORD`
             if [[ `echo $report | jq -r .message` = 'success' ]]; then
-                die 'success' $DEBREW_SOURCE_NAME $DISTRO $ARCH
+                die 'success' $NAME $DISTRO $ARCH
             else
-                die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH
+                die 'failure' $NAME $DISTRO $ARCH
             fi
         done
         cd $DEBREW_CWD
