@@ -135,9 +135,17 @@ EOF
         echo -e "\e[0;32mPushing build artifacts to the repo...\e[0m"
         for NAME in $PACKAGE_NAMES; do
             PACKAGE_FULLNAME="${NAME}_${DEBREW_REVISION_PREFIX}+${DISTRO}_${ARCH}.deb"
-            DEBREW_FTP_URL="https://api.bintray.com/content/$DEBREW_MAINTAINER_LOGIN/deb/$NAME/$DEBREW_VERSION_PREFIX/$PACKAGE_FULLNAME;deb_distribution=$DISTRO-$DEBREW_ENVIRONMENT;deb_component=main;deb_architecture=$ARCH;publish=1"
+            if [[ $DEBREW_HIDDEN_REPO == 'true' ]]; then
+              DEBREW_FTP_URL=$DEBREW_HIDDEN_REPO_PATH
+              DEBREW_FTP_USERNAME="travis"
+              DEBREW_FTP_PASSWORD=$DEBREW_HIDDEN_REPO_PASSWORD
+            else
+              DEBREW_FTP_URL="https://api.bintray.com/content/$DEBREW_MAINTAINER_LOGIN/deb/$NAME/$DEBREW_VERSION_PREFIX/$PACKAGE_FULLNAME;deb_distribution=$DISTRO-$DEBREW_ENVIRONMENT;deb_component=main;deb_architecture=$ARCH;publish=1"
+              DEBREW_FTP_USERNAME=$DEBREW_MAINTAINER_LOGIN
+              DEBREW_FTP_PASSWORD=$BINTRAY_FTP_PASSWORD
+            fi
             echo -e "\e[0;31m Uploading $i to $DEBREW_FTP_URL\e[0m"
-            report=`curl -s -T "$PACKAGE_FULLNAME" "$DEBREW_FTP_URL" --user $DEBREW_MAINTAINER_LOGIN:$BINTRAY_FTP_PASSWORD`
+            report=`curl -s -T "$PACKAGE_FULLNAME" "$DEBREW_FTP_URL" --user $DEBREW_FTP_USERNAME:$DEBREW_FTP_PASSWORD`
             echo "Bintray report:"
             echo $report | jq .
             if [[ `echo $report | jq -r .message` = 'success' ]]; then
