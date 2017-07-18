@@ -145,13 +145,17 @@ EOF
               DEBREW_FTP_PASSWORD=$BINTRAY_FTP_PASSWORD
             fi
             echo -e "\e[0;31m Uploading $i to $DEBREW_FTP_URL\e[0m"
+
             report=`curl -s -T "$PACKAGE_FULLNAME" "$DEBREW_FTP_URL" --user $DEBREW_FTP_USERNAME:$DEBREW_FTP_PASSWORD`
-            echo "Bintray report:"
-            echo $report | jq .
-            if [[ `echo $report | jq -r .message` = 'success' ]]; then
-                die 'success' $NAME $DISTRO $ARCH
+
+            if [[ $DEBREW_HIDDEN_REPO == 'true' ]]; then
+              die 'success' $NAME $DISTRO $ARCH
             else
-                die 'failure' $NAME $DISTRO $ARCH "uploading packages"
+              if [[ `echo $report | jq -r .message` = 'success' ]]; then
+                  die 'success' $NAME $DISTRO $ARCH
+              else
+                  die 'failure' $NAME $DISTRO $ARCH "uploading packages"
+              fi
             fi
         done
         cd $DEBREW_CWD
