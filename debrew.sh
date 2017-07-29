@@ -148,10 +148,12 @@ EOF
 
             report=`curl -s -T "$PACKAGE_FULLNAME" "$DEBREW_FTP_URL" --user $DEBREW_FTP_USERNAME:$DEBREW_FTP_PASSWORD`
 
+            echo "Bintray report: $report"
+
             if [[ $DEBREW_HIDDEN_REPO == 'true' ]]; then
               die 'success' $NAME $DISTRO $ARCH
             else
-              if [[ `echo $report | jq -r .message` = 'success' ]]; then
+              if [[ `echo $report | jq -r .message` == 'success' ]]; then
                   die 'success' $NAME $DISTRO $ARCH
               else
                   die 'failure' $NAME $DISTRO $ARCH "uploading packages"
