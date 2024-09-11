@@ -21,11 +21,11 @@ function die() {
 
     case $STATUS in
       'success' )
-        test -z $TELEGRAM_TOKEN || curl -XPOST -d "message=✅ SUCCESS${NL}Job number: ${TRAVIS_JOB_NUMBER}${NL}Package: ${NAME} ${NL}Distro: ${DISTRO}-${ARCHITECTURE} ${NL}Logs: https://travis-ci.org/${TRAVIS_REPO_SLUG}/jobs/${TRAVIS_JOB_ID}&token=${TELEGRAM_TOKEN}" http://api.it-the-drote.tk/telegram
+        echo "✅ SUCCESS${NL}Job number: ${TRAVIS_JOB_NUMBER}${NL}Package: ${NAME} ${NL}Distro: ${DISTRO}-${ARCHITECTURE} ${NL}Logs: https://travis-ci.org/${TRAVIS_REPO_SLUG}/jobs/${TRAVIS_JOB_ID}"
         ;;
       'failure' )
         dump_output
-        test -z $TELEGRAM_TOKEN || curl -XPOST -d "message=❌ FAILURE${NL}Job number: ${TRAVIS_JOB_NUMBER}${NL}Package: ${NAME} ${NL}Distro: ${DISTRO}-${ARCHITECTURE} ${NL}Logs: https://travis-ci.org/${TRAVIS_REPO_SLUG}/jobs/${TRAVIS_JOB_ID} ${NL}Failed task: ${TASK}&token=${TELEGRAM_TOKEN}" http://api.it-the-drote.tk/telegram
+        echo "❌ FAILURE${NL}Job number: ${TRAVIS_JOB_NUMBER}${NL}Package: ${NAME} ${NL}Distro: ${DISTRO}-${ARCHITECTURE} ${NL}Logs: https://travis-ci.org/${TRAVIS_REPO_SLUG}/jobs/${TRAVIS_JOB_ID} ${NL}Failed task: ${TASK}"
         exit 1
         ;;
     esac
@@ -36,17 +36,14 @@ function die() {
 
 echo -e "\e[0;32mSetting up variables...\e[0m"
 
-test -z TELEGRAM_TOKEN && die 'failure' 'null' 'null' 'null' 'No telegram token given'
-test -z BINTRAY_FTP_PASSWORD && die 'failure' 'null' 'null' 'null' 'No bintray password given'
-
-DEBREW_SUPPORTED_DISTRIBUTIONS="jessie
-stretch
-trusty
-xenial"
+DEBREW_SUPPORTED_DISTRIBUTIONS="bookworm"
 DEBREW_SUPPORTED_ARCHITECTURES="amd64
-i386"
+armhf
+arm64"
 
+DEBREW_IMAGE_SOURCE="repo.rcmd.space"
 DEBREW_CWD=`pwd`
+DEBREW_WORKDIR="/data"
 DEBREW_REPO_OWNER=`echo $DEBREW_CWD | cut -f 5 -d '/'`
 DEBREW_SOURCE_NAME=`dpkg-parsechangelog | grep Source | cut -f 2 -d ' '`
 DEBREW_REVISION_PREFIX=`dpkg-parsechangelog | grep Version | cut -f 2 -d ' '`
@@ -64,7 +61,7 @@ current_hash=`git rev-parse HEAD`
 changelog_modified=`git show --name-only HEAD | grep -c 'debian/changelog'`
 
 if [[ $stable_hash == $current_hash ]]; then
-    if [[ $TRAVIS_BRANCH == 'stable' ]]; then
+    if [[ $DRONE_BRANCH == 'stable' ]]; then
         if [[ $PRODUCTION_FLAVOURS == 'any' ]]; then
             DEBREW_DISTRIBUTIONS=$DEBREW_SUPPORTED_DISTRIBUTIONS
         else
@@ -96,11 +93,12 @@ for DISTRO in $DEBREW_DISTRIBUTIONS; do
         echo -e "\e[0;32mAssembling Dockerfile...\e[0m"
         echo -e "\e[0;32mDistribution: "$DISTRO"-"$ARCH"\e[0m"
         cat >Dockerfile <<EOF
-FROM likeall/$DISTRO-$ARCH
-WORKDIR $DEBREW_CWD
+FROM $DEBREW_IMAGE_SOURCE/debrewery-$DISTRO:$ARCH
+RUN mkdir $DEBREW_WORKDIR /ext-build
+WORKDIR $DEBREW_WORKDIR
 COPY . .
-ENV DEBFULLNAME "Travis CI"
-ENV DEBEMAIL repo@crapcannon.tk
+ENV DEBFULLNAME "Tiredsysadmin Repo"
+ENV DEBEMAIL repo@tiredsysadmin.cc
 ENV LC_ALL en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US.UTF-8
@@ -110,60 +108,28 @@ EOF
         test -z $SECRET2 || echo "ENV SECRET2 $SECRET2" >> Dockerfile
         test -z $SECRET3 || echo "ENV SECRET3 $SECRET3" >> Dockerfile
         cat >> Dockerfile <<EOF
-RUN apt-get update
+RUN apt-get -y update
 RUN mk-build-deps --install --remove --tool 'apt-get --no-install-recommends --yes' debian/control
 RUN dch --preserve --newversion $DEBREW_REVISION_PREFIX"+"$DISTRO ""
 RUN dch --preserve -D $DISTRO --force-distribution ""
 RUN dh_make --createorig -s -y -p $DEBREW_SOURCE_NAME"_"$DEBREW_VERSION_PREFIX || true
 RUN debuild -e SECRET1 -e SECRET2 -e SECRET3 --no-tgz-check -us -uc
+RUN find . -name '*.deb'
 CMD /bin/true
 EOF
         bash -c "while true; do echo \$(date) - building ...; sleep $PING_SLEEP; done" & PING_LOOP_PID=$!
         echo -e "\e[0;32mBuilding Docker container...\e[0m"
-        docker build --tag="debrew/"$DEBREW_SOURCE_NAME"_"$DISTRO . >> $BUILD_OUTPUT 2>&1 || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH "building container"
-        rm -f Dockerfile
-        DEBREW_CIDFILE=`mktemp`
-        rm -f $DEBREW_CIDFILE
-        echo -e "\e[0;32mRunning Docker container...\e[0m"
-        docker run --cidfile=$DEBREW_CIDFILE "debrew/"$DEBREW_SOURCE_NAME"_"$DISTRO >> $BUILD_OUTPUT 2>&1 || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH "running container"
         mkdir ext-build
-        echo -e "\e[0;32mExtracting files from Docker container...\e[0m"
-        for NAME in $PACKAGE_NAMES; do
-          docker cp `cat $DEBREW_CIDFILE`":"$DEBREW_CWD"/../${NAME}_${DEBREW_REVISION_PREFIX}+${DISTRO}_${ARCH}.deb" ./ext-build || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH "copying packages"
-        done
+        podman build --tag="debrew/"$DEBREW_SOURCE_NAME"_"$DISTRO -v ${PWD}:/ext-build . >> $BUILD_OUTPUT 2>&1 || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH "building container"
+        rm -f Dockerfile
         cd ./ext-build/
         echo -e "\e[0;32mPushing build artifacts to the repo...\e[0m"
         for NAME in $PACKAGE_NAMES; do
             PACKAGE_FULLNAME="${NAME}_${DEBREW_REVISION_PREFIX}+${DISTRO}_${ARCH}.deb"
-            if [[ $DEBREW_HIDDEN_REPO == 'true' ]]; then
-              DEBREW_FTP_URL=$DEBREW_HIDDEN_REPO_PATH
-              DEBREW_FTP_USERNAME="travis"
-              DEBREW_FTP_PASSWORD=$DEBREW_HIDDEN_REPO_PASSWORD
-            else
-              DEBREW_FTP_URL="https://api.bintray.com/content/$DEBREW_MAINTAINER_LOGIN/deb/$NAME/$DEBREW_VERSION_PREFIX/$PACKAGE_FULLNAME;deb_distribution=$DISTRO-$DEBREW_ENVIRONMENT;deb_component=main;deb_architecture=$ARCH;publish=1"
-              DEBREW_FTP_USERNAME=$DEBREW_MAINTAINER_LOGIN
-              DEBREW_FTP_PASSWORD=$BINTRAY_FTP_PASSWORD
-            fi
-            echo -e "\e[0;31m Uploading $i to $DEBREW_FTP_URL\e[0m"
-
-            report=`curl -s -T "$PACKAGE_FULLNAME" "$DEBREW_FTP_URL" --user $DEBREW_FTP_USERNAME:$DEBREW_FTP_PASSWORD`
-
-            echo "Bintray report: $report"
-
-            if [[ $DEBREW_HIDDEN_REPO == 'true' ]]; then
-              die 'success' $NAME $DISTRO $ARCH
-            else
-              if [[ `echo $report | jq -r .message` == 'success' ]]; then
-                  die 'success' $NAME $DISTRO $ARCH
-              else
-                  die 'failure' $NAME $DISTRO $ARCH "uploading packages"
-              fi
-            fi
+            echo "Built package ${PACKAGE_FULLNAME}"
         done
         cd $DEBREW_CWD
         echo -e "\e[0;32mRemoving Docker container...\e[0m"
-        docker rm `cat $DEBREW_CIDFILE`
-        rm -f $DEBREW_CIDFILE
         rm -fr ext-build
         kill $PING_LOOP_PID
         rm $BUILD_OUTPUT
