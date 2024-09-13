@@ -116,6 +116,7 @@ EOF
         echo -e "\e[0;32mPushing build artifacts to the repo...\e[0m"
         for NAME in $PACKAGE_NAMES; do
             PACKAGE_FULLNAME="${NAME}_${DEBREW_REVISION_PREFIX}+${DISTRO}_${ARCH}.deb"
+            mv ${PACKAGE_FULLNAME} /opt/debian/incoming
             echo "Built package ${PACKAGE_FULLNAME}"
         done
         cd $DEBREW_CWD
