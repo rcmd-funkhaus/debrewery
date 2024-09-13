@@ -105,7 +105,7 @@ RUN dch --preserve --newversion $DEBREW_REVISION_PREFIX"+"$DISTRO ""
 RUN dch --preserve -D $DISTRO --force-distribution ""
 RUN dh_make --createorig -s -y -p $DEBREW_SOURCE_NAME"_"$DEBREW_VERSION_PREFIX || true
 RUN debuild -e SECRET1 -e SECRET2 -e SECRET3 --no-tgz-check -us -uc
-RUN find . -name '*.deb'
+RUN find .. -name '*.deb'
 CMD /bin/true
 EOF
         echo -e "\e[0;32mBuilding Docker container...\e[0m"
@@ -121,5 +121,6 @@ EOF
         cd $DEBREW_CWD
         echo -e "\e[0;32mRemoving Docker container...\e[0m"
         rm -fr ./ext-build
+        podman rmi -f localhost/debrew/${DEBREW_SOURCE_NAME}_${DISTRO}
     done
 done
