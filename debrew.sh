@@ -1,13 +1,7 @@
 #!/usr/bin/env bash
 
-set -x
-
-export PING_SLEEP=30s
 export WORKDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-export BUILD_OUTPUT=$WORKDIR/build.out
 NL='%0D%0A'
-
-touch $BUILD_OUTPUT
 
 dump_output() {
    echo -e "\e[0;31mTailing the last 500 lines of output:\e[0m"
@@ -85,18 +79,13 @@ else
     DEBREW_ENVIRONMENT='testing'
 fi
 
-#if [[ $changelog_modified == '0' ]]; then
-#    echo -e "\e[0;32mChangelog is not modified, exiting gracefully.\e[0m"
-#    exit 0
-#fi
-
 for DISTRO in $DEBREW_DISTRIBUTIONS; do
     for ARCH in $DEBREW_ARCHITECTURES; do
         echo -e "\e[0;32mAssembling Dockerfile...\e[0m"
         echo -e "\e[0;32mDistribution: "$DISTRO"-"$ARCH"\e[0m"
         cat >Dockerfile <<EOF
 FROM $DEBREW_IMAGE_SOURCE/debrewery-$DISTRO:$ARCH
-RUN mkdir $DEBREW_WORKDIR /ext-build
+RUN mkdir $DEBREW_WORKDIR
 WORKDIR $DEBREW_WORKDIR
 COPY . .
 ENV DEBFULLNAME "Tiredsysadmin Repo"
@@ -119,10 +108,9 @@ RUN debuild -e SECRET1 -e SECRET2 -e SECRET3 --no-tgz-check -us -uc
 RUN find . -name '*.deb'
 CMD /bin/true
 EOF
-        bash -c "while true; do echo \$(date) - building ...; sleep $PING_SLEEP; done" & PING_LOOP_PID=$!
         echo -e "\e[0;32mBuilding Docker container...\e[0m"
         mkdir ext-build
-        podman build --tag="debrew/"$DEBREW_SOURCE_NAME"_"$DISTRO -v ${PWD}:/ext-build . >> $BUILD_OUTPUT 2>&1 || die 'failure' $DEBREW_SOURCE_NAME $DISTRO $ARCH "building container"
+        podman build --tag="debrew/"$DEBREW_SOURCE_NAME"_"$DISTRO -v ${PWD}:/ext-build .
         rm -f Dockerfile
         cd ./ext-build/
         echo -e "\e[0;32mPushing build artifacts to the repo...\e[0m"
@@ -132,8 +120,6 @@ EOF
         done
         cd $DEBREW_CWD
         echo -e "\e[0;32mRemoving Docker container...\e[0m"
-        rm -fr ext-build
-        kill $PING_LOOP_PID
-        rm $BUILD_OUTPUT
+        rm -fr ./ext-build
     done
 done
