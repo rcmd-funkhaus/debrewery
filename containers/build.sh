@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-for os in $(ls -1 -d */); do
-  for release in $(ls -1 -d ${os}/*/); do
-    for architecture in $(ls -1 -d ${os}/${release}/*/); do
-      podman -build -t repo.rcmd.space/debrewery-${release}:${architecture} ${os}/${release}/${architecture}/
+for os in "debian"; do
+  for release in "bookworm"; do
+    for arch in "amd64 armhf arm64"; do
+      podman build -t repo.rcmd.space/debian-${release}:${arch} . -f ${os}/${release}/${arch}/Dockerfile
     done
   done
 done
