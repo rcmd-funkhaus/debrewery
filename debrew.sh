@@ -105,14 +105,14 @@ RUN dch --preserve --newversion $DEBREW_REVISION_PREFIX"+"$DISTRO ""
 RUN dch --preserve -D $DISTRO --force-distribution ""
 RUN dh_make --createorig -s -y -p $DEBREW_SOURCE_NAME"_"$DEBREW_VERSION_PREFIX || true
 RUN debuild -e SECRET1 -e SECRET2 -e SECRET3 --no-tgz-check -us -uc
-RUN find .. -name '*.deb'
+RUN cp ../${NAME}_${DEBREW_REVISION_PREFIX}+${DISTRO}_${ARCH}.deb ./ext-build/
 CMD /bin/true
 EOF
         echo -e "\e[0;32mBuilding Docker container...\e[0m"
         mkdir ext-build
         podman build --tag="debrew/"$DEBREW_SOURCE_NAME"_"$DISTRO -v ${PWD}:/ext-build .
         rm -f Dockerfile
-        cd ./ext-build/
+        cd ./ext-build/ && ls -l
         echo -e "\e[0;32mPushing build artifacts to the repo...\e[0m"
         for NAME in $PACKAGE_NAMES; do
             PACKAGE_FULLNAME="${NAME}_${DEBREW_REVISION_PREFIX}+${DISTRO}_${ARCH}.deb"
