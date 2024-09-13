@@ -105,7 +105,7 @@ RUN dch --preserve --newversion $DEBREW_REVISION_PREFIX"+"$DISTRO ""
 RUN dch --preserve -D $DISTRO --force-distribution ""
 RUN dh_make --createorig -s -y -p $DEBREW_SOURCE_NAME"_"$DEBREW_VERSION_PREFIX || true
 RUN debuild -e SECRET1 -e SECRET2 -e SECRET3 --no-tgz-check -us -uc
-RUN cp ../${NAME}_${DEBREW_REVISION_PREFIX}+${DISTRO}_${ARCH}.deb ./ext-build/
+RUN cp ../*.deb ./ext-build/
 CMD /bin/true
 EOF
         echo -e "\e[0;32mBuilding Docker container...\e[0m"
