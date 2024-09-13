@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-set -e
 set -x
 
 export PING_SLEEP=30s
@@ -81,8 +80,8 @@ if [[ $stable_hash == $current_hash ]]; then
         exit 0
     fi
 else
-    DEBREW_DISTRIBUTIONS=$TESTING_FLAVOURS
-    DEBREW_ARCHITECTURES=$TESTING_ARCHITECTURES
+    DEBREW_DISTRIBUTIONS=$(lsb_release -cs 2>/dev/null)
+    DEBREW_ARCHITECTURES=$(dpkg --print-architecture)
     DEBREW_ENVIRONMENT='testing'
 fi
 
