@@ -90,14 +90,14 @@ WORKDIR $DEBREW_WORKDIR
 COPY . .
 ENV DEBFULLNAME "Tiredsysadmin Repo"
 ENV DEBEMAIL repo@tiredsysadmin.cc
-ENV LC_ALL en_US.UTF-8
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US.UTF-8
 EOF
 
-        test -z $SECRET1 || echo "ENV SECRET1 $SECRET1" >> Dockerfile
-        test -z $SECRET2 || echo "ENV SECRET2 $SECRET2" >> Dockerfile
-        test -z $SECRET3 || echo "ENV SECRET3 $SECRET3" >> Dockerfile
+        test -z $SECRET1 || echo "ENV SECRET1=$SECRET1" >> Dockerfile
+        test -z $SECRET2 || echo "ENV SECRET2=$SECRET2" >> Dockerfile
+        test -z $SECRET3 || echo "ENV SECRET3=$SECRET3" >> Dockerfile
         cat >> Dockerfile <<EOF
 RUN apt-get -y update
 RUN mk-build-deps --install --remove --tool 'apt-get --no-install-recommends --yes' debian/control
