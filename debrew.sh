@@ -57,7 +57,7 @@ current_hash=`git rev-parse HEAD`
 changelog_modified=`git show --name-only HEAD | grep -c 'debian/changelog'`
 
 if [[ $stable_hash == $current_hash ]]; then
-    if [[ $DRONE_BRANCH == 'stable' ]]; then
+    if [[ $DRONE_TAG == 'stable' ]]; then
         if [[ $PRODUCTION_FLAVOURS == 'any' ]]; then
             DEBREW_DISTRIBUTIONS=$DEBREW_SUPPORTED_DISTRIBUTIONS
         else
