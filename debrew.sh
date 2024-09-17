@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -x
-
 export WORKDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 NL='%0D%0A'
 
