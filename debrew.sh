@@ -62,16 +62,8 @@ echo "Current CI tag is: ${DRONE_TAG}"
 
 if [[ $stable_hash == $current_hash ]]; then
     if [[ $DRONE_TAG == 'stable' ]]; then
-        if [[ $PRODUCTION_FLAVOURS == 'any' ]]; then
-            DEBREW_DISTRIBUTIONS=$DEBREW_SUPPORTED_DISTRIBUTIONS
-        else
-            DEBREW_DISTRIBUTIONS=$PRODUCTION_FLAVOURS
-        fi
-        if [[ $PRODUCTION_ARCHITECTURES == 'any' ]]; then
-            DEBREW_ARCHITECTURES=$DEBREW_SUPPORTED_ARCHITECTURES
-        else
-            DEBREW_ARCHITECTURES=$PRODUCTION_ARCHITECTURES
-        fi
+        DEBREW_DISTRIBUTIONS=$DEBREW_SUPPORTED_DISTRIBUTIONS
+        DEBREW_ARCHITECTURES=$DEBREW_SUPPORTED_ARCHITECTURES
         DEBREW_ENVIRONMENT='stable'
     else
         echo -e "\e[0;32mThis branch is not "stable", exiting gracefully.\e[0m"
