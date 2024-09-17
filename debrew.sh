@@ -56,7 +56,7 @@ stable_hash=`git rev-list stable | head -n 1`
 current_hash=`git rev-parse HEAD`
 changelog_modified=`git show --name-only HEAD | grep -c 'debian/changelog'`
 
-echo "Current CI tag is: ${DRONE_COMMIT_ID}"
+echo "Current CI tag is: ${DRONE_TAG}"
 
 if [[ $stable_hash == $current_hash ]]; then
     if [[ $DRONE_TAG == 'stable' ]]; then
