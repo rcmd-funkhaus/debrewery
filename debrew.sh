@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+if [[ $DEBREW_DEBUG == 'true' ]]; then
+    set -x
+fi
+
 export WORKDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 NL='%0D%0A'
 
