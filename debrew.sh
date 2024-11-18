@@ -56,6 +56,9 @@ TESTING_ARCHITECTURES=`grep X-Debrew-Testing-Architectures ./debian/control | cu
 PACKAGE_NAMES=`grep "Package: " ./debian/control | awk '{print $2}'`
 DEBREW_MAINTAINER_LOGIN=`grep X-Debrew-Maintainer-Login ./debian/control | cut -f 2- -d ' '`
 
+test -z $PRODUCTION_FLAVOURS || DEBREW_SUPPORTED_DISTRIBUTIONS=${PRODUCTION_FLAVOURS}
+test -z $PRODUCTION_ARCHITECTURES || DEBREW_SUPPORTED_ARCHITECTURES=${PRODUCTION_ARCHITECTURES}
+
 stable_hash=`git rev-list stable | head -n 1`
 current_hash=`git rev-parse HEAD`
 changelog_modified=`git show --name-only HEAD | grep -c 'debian/changelog'`
