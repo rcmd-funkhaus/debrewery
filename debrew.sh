@@ -136,6 +136,6 @@ EOF
         cd $DEBREW_CWD
         echo -e "\e[0;32mRemoving Docker container...\e[0m"
         rm -fr ./ext-build
-        #podman rmi -f localhost/debrew/${DEBREW_SOURCE_NAME}_${DISTRO}
+        podman rmi -f localhost/debrew/${DEBREW_SOURCE_NAME}_${DISTRO}
     done
 done
