@@ -4,6 +4,8 @@ if [[ $DEBREW_DEBUG == 'true' ]]; then
     set -x
 fi
 
+set -e
+
 export WORKDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 NL='%0D%0A'
 
@@ -55,6 +57,7 @@ TESTING_FLAVOURS=`grep X-Debrew-Testing-Flavours ./debian/control | cut -f 2- -d
 TESTING_ARCHITECTURES=`grep X-Debrew-Testing-Architectures ./debian/control | cut -f 2- -d ' ' | jq -r '.[]'`
 PACKAGE_NAMES=`grep "Package: " ./debian/control | awk '{print $2}'`
 DEBREW_MAINTAINER_LOGIN=`grep X-Debrew-Maintainer-Login ./debian/control | cut -f 2- -d ' '`
+DEBREW_DEBUG_SLEEP=`grep X-Debrew-Debug-Sleep ./debian/control | cut -f 2- -d ' '`
 
 test -z $PRODUCTION_FLAVOURS || DEBREW_SUPPORTED_DISTRIBUTIONS=${PRODUCTION_FLAVOURS}
 test -z $PRODUCTION_ARCHITECTURES || DEBREW_SUPPORTED_ARCHITECTURES=${PRODUCTION_ARCHITECTURES}
@@ -107,6 +110,13 @@ RUN dch --preserve -D $DISTRO --force-distribution ""
 RUN dh_make --createorig -s -y -p $DEBREW_SOURCE_NAME"_"$DEBREW_VERSION_PREFIX || true
 RUN debuild -e SECRET1 -e SECRET2 -e SECRET3 --no-tgz-check -us -uc
 RUN cp ../*.deb /ext-build/ && ls -l /ext-build/
+EOF
+        if ![[ -z $DEBREW_DEBUG_SLEEP ]]; then
+            cat >> Dockerfile << EOF
+RUN sleep $DEBREW_DEBUG_SLEEP
+EOF
+        fi
+        cat >> Dockerfile <<EOF
 CMD /bin/true
 EOF
         echo -e "\e[0;32mBuilding Docker container...\e[0m"
