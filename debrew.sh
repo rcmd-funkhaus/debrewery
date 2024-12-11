@@ -64,7 +64,7 @@ test -z $PRODUCTION_ARCHITECTURES || DEBREW_SUPPORTED_ARCHITECTURES=${PRODUCTION
 
 stable_hash=`git rev-list stable | head -n 1`
 current_hash=`git rev-parse HEAD`
-changelog_modified=`git show --name-only HEAD | grep -c 'debian/changelog'`
+changelog_modified=`git show --name-only HEAD | grep -c 'debian/changelog' || true`
 
 echo "Current CI tag is: ${DRONE_TAG}"
 
