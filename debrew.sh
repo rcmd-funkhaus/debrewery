@@ -102,6 +102,11 @@ EOF
         test -z $SECRET1 || echo "ENV SECRET1=$SECRET1" >> Dockerfile
         test -z $SECRET2 || echo "ENV SECRET2=$SECRET2" >> Dockerfile
         test -z $SECRET3 || echo "ENV SECRET3=$SECRET3" >> Dockerfile
+        if [ ! -z $DEBREW_DEBUG_SLEEP ]; then
+            cat >> Dockerfile << EOF
+RUN sleep $DEBREW_DEBUG_SLEEP
+EOF
+        fi
         cat >> Dockerfile <<EOF
 RUN apt-get -y update
 RUN mk-build-deps --install --remove --tool 'apt-get --no-install-recommends --yes' debian/control
@@ -110,13 +115,6 @@ RUN dch --preserve -D $DISTRO --force-distribution ""
 RUN dh_make --createorig -s -y -p $DEBREW_SOURCE_NAME"_"$DEBREW_VERSION_PREFIX || true
 RUN debuild -e SECRET1 -e SECRET2 -e SECRET3 --no-tgz-check -us -uc
 RUN cp ../*.deb /ext-build/ && ls -l /ext-build/
-EOF
-        if ![[ -z $DEBREW_DEBUG_SLEEP ]]; then
-            cat >> Dockerfile << EOF
-RUN sleep $DEBREW_DEBUG_SLEEP
-EOF
-        fi
-        cat >> Dockerfile <<EOF
 CMD /bin/true
 EOF
         echo -e "\e[0;32mBuilding Docker container...\e[0m"
